@@ -384,10 +384,10 @@ export default function RecoveryDashboard() {
         <p className="mt-3 text-red-300">{error}</p>
 
         <a
-          href="/login"
+          href="/admin/login"
           className="mt-4 block text-cyan-300"
         >
-          Sign In
+           Go to Admin Sign In
         </a>
       </main>
     );

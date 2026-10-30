@@ -772,10 +772,10 @@ export default function AdminMatchesPage() {
         </h1>
         <p className="mt-3 text-red-400">{error}</p>
         <a
-          href="/login"
+          href="/admin/login"
           className="mt-5 inline-block text-cyan-300 underline"
         >
-          Go to Sign In
+          Go to Admin Sign In
         </a>
       </main>
     );

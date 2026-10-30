@@ -53,7 +53,7 @@ export default function Home() {
       if (active) setAuthLoading(false);
     }
 
-    checkSession();
+    void checkSession();
 
     const {
       data: { subscription },
@@ -64,10 +64,22 @@ export default function Home() {
 
       setUser(currentUser);
       setStaffRole(null);
-      setAuthLoading(false);
 
-      setTimeout(() => {
-        if (active) void loadRole(currentUser);
+      if (!currentUser) {
+        setAuthLoading(false);
+        return;
+      }
+
+      setAuthLoading(true);
+
+      setTimeout(async () => {
+        if (!active) return;
+
+        await loadRole(currentUser);
+
+        if (active) {
+          setAuthLoading(false);
+        }
       }, 0);
     });
 
@@ -99,24 +111,17 @@ export default function Home() {
   const isStaff =
     staffRole === "admin" || staffRole === "reviewer";
 
-  const fullName =
-    user?.user_metadata?.full_name ||
-    user?.email?.split("@")[0] ||
-    "My Account";
-
   return (
     <main className="min-h-screen bg-[#06111f] text-white">
 
       {/* ================= NAVBAR ================= */}
 
       <nav className="relative z-50 border-b border-white/10 bg-[#06111f]/95 backdrop-blur-xl">
-
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-5 flex items-center justify-between gap-4">
 
           {/* LOGO */}
 
           <a href="/" className="shrink-0">
-
             <h1 className="text-2xl font-bold tracking-tight">
               FindBack{" "}
               <span className="text-cyan-400">
@@ -127,13 +132,11 @@ export default function Home() {
             <p className="text-[10px] text-slate-400 tracking-[0.18em]">
               IDENTIFY • VERIFY • REUNITE
             </p>
-
           </a>
 
           {/* DESKTOP NAVIGATION */}
 
           <div className="hidden lg:flex items-center gap-7 text-sm text-slate-300">
-
             <a
               href="#home"
               className="text-cyan-400 hover:text-cyan-300 transition"
@@ -161,18 +164,26 @@ export default function Home() {
             >
               About
             </a>
-
           </div>
 
-          {/* DESKTOP AUTH BUTTONS */}
+          {/* ================= DESKTOP AUTH ================= */}
 
           <div className="hidden md:flex items-center gap-3">
+
+            {/* LOGGED OUT */}
 
             {!authLoading && !user && (
               <>
                 <a
+                  href="/admin/login"
+                  className="border border-cyan-400/40 text-cyan-300 px-5 py-2.5 rounded-xl hover:bg-cyan-400/10 hover:border-cyan-300/60 transition text-sm font-semibold"
+                >
+                  Admin
+                </a>
+
+                <a
                   href="/login"
-                  className="border border-cyan-400/40 text-cyan-300 px-5 py-2.5 rounded-xl hover:bg-cyan-400/10 transition text-sm font-semibold"
+                  className="border border-cyan-400/40 text-cyan-300 px-5 py-2.5 rounded-xl hover:bg-cyan-400/10 hover:border-cyan-300/60 transition text-sm font-semibold"
                 >
                   Sign In
                 </a>
@@ -186,45 +197,46 @@ export default function Home() {
               </>
             )}
 
-            {!authLoading && user && (
+            {/* ADMIN / REVIEWER LOGGED IN */}
+
+            {!authLoading && user && isStaff && (
               <>
-                {isStaff && (
-                  <a
-                    href="/admin/matches"
-                    className="border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 px-4 py-2.5 rounded-xl hover:bg-emerald-400/20 transition text-sm font-semibold"
-                  >
-                    Admin Panel
-                  </a>
-                )}
-
                 <a
-                  href="/dashboard"
-                  className="border border-cyan-400/40 text-cyan-300 px-4 py-2.5 rounded-xl hover:bg-cyan-400/10 transition text-sm font-semibold"
+                  href="/admin/dashboard"
+                  className="border border-cyan-400/40 text-cyan-300 px-5 py-2.5 rounded-xl hover:bg-cyan-400/10 hover:border-cyan-300/60 transition text-sm font-semibold"
                 >
-                  Dashboard
+                  Admin
                 </a>
-
-                <div className="hidden xl:block text-right max-w-[150px]">
-
-                  <p className="text-xs font-semibold truncate">
-                    {fullName}
-                  </p>
-
-                  <p className="text-[10px] text-slate-500">
-                    {isStaff ? staffRole : "Signed In"}
-                  </p>
-
-                </div>
 
                 <button
                   type="button"
                   onClick={handleSignOut}
                   disabled={signingOut}
-                  className="border border-red-400/30 text-red-300 px-4 py-2.5 rounded-xl hover:bg-red-400/10 transition text-sm font-semibold disabled:opacity-50"
+                  className="border border-red-400/30 text-red-300 px-5 py-2.5 rounded-xl hover:bg-red-400/10 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {signingOut
-                    ? "Signing Out..."
-                    : "Sign Out"}
+                  {signingOut ? "Signing Out..." : "Sign Out"}
+                </button>
+              </>
+            )}
+
+            {/* NORMAL USER LOGGED IN */}
+
+            {!authLoading && user && !isStaff && (
+              <>
+                <a
+                  href="/dashboard"
+                  className="border border-cyan-400/40 text-cyan-300 px-5 py-2.5 rounded-xl hover:bg-cyan-400/10 transition text-sm font-semibold"
+                >
+                  Dashboard
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="border border-red-400/30 text-red-300 px-5 py-2.5 rounded-xl hover:bg-red-400/10 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {signingOut ? "Signing Out..." : "Sign Out"}
                 </button>
               </>
             )}
@@ -234,26 +246,22 @@ export default function Home() {
                 Checking session...
               </span>
             )}
-
           </div>
 
           {/* MOBILE MENU BUTTON */}
 
           <button
             type="button"
-            onClick={() =>
-              setMobileMenuOpen(!mobileMenuOpen)
-            }
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden border border-white/20 rounded-xl px-4 py-2 text-sm text-cyan-300"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? "Close" : "Menu"}
           </button>
-
         </div>
 
-        {/* MOBILE NAVIGATION */}
+        {/* ================= MOBILE NAVIGATION ================= */}
 
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/10 bg-[#071522] px-6 py-5 space-y-4 text-sm">
@@ -290,10 +298,21 @@ export default function Home() {
               About
             </a>
 
+            {/* MOBILE LOGGED OUT */}
+
             {!authLoading && !user && (
               <>
                 <a
+                  href="/admin/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center border border-cyan-400/40 text-cyan-300 px-5 py-3 rounded-xl hover:bg-cyan-400/10 transition"
+                >
+                  Admin
+                </a>
+
+                <a
                   href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
                   className="block text-center border border-cyan-400/40 text-cyan-300 px-5 py-3 rounded-xl"
                 >
                   Sign In
@@ -301,6 +320,7 @@ export default function Home() {
 
                 <a
                   href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
                   className="block text-center bg-cyan-400 text-[#03101d] font-bold px-5 py-3 rounded-xl"
                 >
                   Sign Up
@@ -308,27 +328,17 @@ export default function Home() {
               </>
             )}
 
-            {!authLoading && user && (
+            {/* MOBILE ADMIN */}
+
+            {!authLoading && user && isStaff && (
               <>
-                <p className="text-slate-400 text-xs">
-                  Signed in as {fullName}
-                </p>
-
                 <a
-                  href="/dashboard"
-                  className="block text-center border border-cyan-400/40 text-cyan-300 px-5 py-3 rounded-xl"
+                  href="/admin/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center border border-cyan-400/40 text-cyan-300 px-5 py-3 rounded-xl hover:bg-cyan-400/10 transition"
                 >
-                  Dashboard
+                  Admin
                 </a>
-
-                {isStaff && (
-                  <a
-                    href="/admin/matches"
-                    className="block text-center border border-emerald-400/40 text-emerald-300 px-5 py-3 rounded-xl"
-                  >
-                    Admin Panel
-                  </a>
-                )}
 
                 <button
                   type="button"
@@ -336,32 +346,49 @@ export default function Home() {
                   disabled={signingOut}
                   className="w-full border border-red-400/30 text-red-300 px-5 py-3 rounded-xl disabled:opacity-50"
                 >
-                  {signingOut
-                    ? "Signing Out..."
-                    : "Sign Out"}
+                  {signingOut ? "Signing Out..." : "Sign Out"}
                 </button>
               </>
             )}
 
+            {/* MOBILE NORMAL USER */}
+
+            {!authLoading && user && !isStaff && (
+              <>
+                <a
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center border border-cyan-400/40 text-cyan-300 px-5 py-3 rounded-xl"
+                >
+                  Dashboard
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="w-full border border-red-400/30 text-red-300 px-5 py-3 rounded-xl disabled:opacity-50"
+                >
+                  {signingOut ? "Signing Out..." : "Sign Out"}
+                </button>
+              </>
+            )}
           </div>
         )}
-
       </nav>
 
       {/* ================= HERO ================= */}
 
       <section
         id="home"
-        className="relative min-h-[650px] overflow-hidden flex items-center"
+        className="relative min-h-[680px] overflow-hidden flex items-center"
       >
-
         {/* BACKGROUND IMAGE */}
 
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url('/findback-hero-bg.png')",
+            backgroundImage: "url('/findback-hero-bg.png')",
           }}
         />
 
@@ -380,15 +407,11 @@ export default function Home() {
         {/* HERO CONTENT */}
 
         <div className="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-8 py-20">
-
           <div className="max-w-2xl">
 
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full border border-cyan-400/30 bg-[#04111f]/60 backdrop-blur-md text-cyan-300 text-xs font-medium">
-
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-
               AI-POWERED MISSING PERSON RECOVERY
-
             </div>
 
             <h2 className="text-5xl md:text-7xl font-bold leading-[1.05] tracking-tight">
@@ -411,14 +434,11 @@ export default function Home() {
             {/* HERO BUTTONS */}
 
             <div className="flex flex-wrap gap-4 mt-9">
-
               <a
                 href="/report-missing"
                 className="group bg-cyan-400 hover:bg-cyan-300 text-[#03101d] font-bold px-7 py-4 rounded-xl transition flex items-center gap-3 shadow-lg shadow-cyan-500/10"
               >
-                <span>
-                  Report Missing Person
-                </span>
+                <span>Report Missing Person</span>
 
                 <span className="group-hover:translate-x-1 transition">
                   →
@@ -429,15 +449,12 @@ export default function Home() {
                 href="/report-found"
                 className="group bg-[#071522]/70 backdrop-blur-md border border-white/30 hover:border-cyan-400/60 px-7 py-4 rounded-xl transition flex items-center gap-3"
               >
-                <span>
-                  Report Found Person
-                </span>
+                <span>Report Found Person</span>
 
                 <span className="group-hover:translate-x-1 transition">
                   →
                 </span>
               </a>
-
             </div>
 
             {/* TRUST FEATURES */}
@@ -445,13 +462,11 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10 max-w-2xl">
 
               <div className="flex items-center gap-3 border border-white/10 bg-black/20 backdrop-blur-md rounded-xl px-4 py-3">
-
                 <div className="w-9 h-9 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400">
                   ◇
                 </div>
 
                 <div>
-
                   <p className="text-sm font-semibold">
                     Secure Records
                   </p>
@@ -459,19 +474,15 @@ export default function Home() {
                   <p className="text-[10px] text-slate-400">
                     Protected data
                   </p>
-
                 </div>
-
               </div>
 
               <div className="flex items-center gap-3 border border-white/10 bg-black/20 rounded-xl px-4 py-3">
-
                 <div className="w-9 h-9 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400">
                   ✦
                 </div>
 
                 <div>
-
                   <p className="text-sm font-semibold">
                     AI Matching
                   </p>
@@ -479,19 +490,15 @@ export default function Home() {
                   <p className="text-[10px] text-slate-400">
                     Smart identification
                   </p>
-
                 </div>
-
               </div>
 
               <div className="flex items-center gap-3 border border-white/10 bg-black/20 rounded-xl px-4 py-3">
-
                 <div className="w-9 h-9 rounded-lg bg-cyan-400/10 flex items-center justify-center text-cyan-400">
                   ✓
                 </div>
 
                 <div>
-
                   <p className="text-sm font-semibold">
                     Human Verified
                   </p>
@@ -499,36 +506,29 @@ export default function Home() {
                   <p className="text-[10px] text-slate-400">
                     Controlled process
                   </p>
-
                 </div>
-
               </div>
 
             </div>
-
           </div>
-
         </div>
 
-        {/* SCROLL INDICATOR */}
+        {/* PROFESSIONAL SCROLL INDICATOR */}
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 hidden md:block">
-
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 hidden md:block">
           <a
             href="#how"
-            className="text-xs text-slate-400 hover:text-cyan-400 transition flex flex-col items-center gap-2"
+            className="group flex flex-col items-center gap-2 text-[11px] tracking-wide text-slate-500 hover:text-cyan-300 transition"
           >
             <span>
               Explore FindBack AI System
             </span>
 
-            <span className="text-lg">
+            <span className="text-cyan-400/70 text-lg leading-none group-hover:translate-y-1 transition-transform">
               ↓
             </span>
           </a>
-
         </div>
-
       </section>
 
       {/* ================= HOW IT WORKS ================= */}
@@ -537,11 +537,9 @@ export default function Home() {
         id="how"
         className="relative border-t border-white/10 bg-[#071522]"
       >
-
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-24">
 
           <div className="text-center mb-14">
-
             <p className="text-cyan-400 text-xs font-semibold tracking-[0.25em]">
               SIMPLE • SECURE • INTELLIGENT
             </p>
@@ -555,7 +553,6 @@ export default function Home() {
               missing and found person reports safely and
               intelligently.
             </p>
-
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -563,7 +560,6 @@ export default function Home() {
             {/* STEP 1 */}
 
             <div className="group border border-white/10 bg-white/[0.025] rounded-2xl p-8 hover:border-cyan-400/40 hover:-translate-y-1 transition duration-300">
-
               <div className="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400 font-bold">
                 01
               </div>
@@ -577,13 +573,11 @@ export default function Home() {
                 available person details, location
                 information and a clear image.
               </p>
-
             </div>
 
             {/* STEP 2 */}
 
             <div className="group border border-white/10 bg-white/[0.025] rounded-2xl p-8 hover:border-cyan-400/40 hover:-translate-y-1 transition duration-300">
-
               <div className="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400 font-bold">
                 02
               </div>
@@ -597,13 +591,11 @@ export default function Home() {
                 physical attributes and contextual
                 information to identify potential matches.
               </p>
-
             </div>
 
             {/* STEP 3 */}
 
             <div className="group border border-white/10 bg-white/[0.025] rounded-2xl p-8 hover:border-cyan-400/40 hover:-translate-y-1 transition duration-300">
-
               <div className="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400 font-bold">
                 03
               </div>
@@ -617,13 +609,10 @@ export default function Home() {
                 before notification, safe recovery and case
                 resolution.
               </p>
-
             </div>
 
           </div>
-
         </div>
-
       </section>
 
       {/* ================= SAFETY ================= */}
@@ -632,7 +621,6 @@ export default function Home() {
         id="safety"
         className="bg-[#06111f]"
       >
-
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-24">
 
           <div className="relative overflow-hidden border border-cyan-400/15 rounded-3xl bg-gradient-to-br from-cyan-400/[0.08] to-blue-500/[0.02] p-8 md:p-12">
@@ -661,7 +649,6 @@ export default function Home() {
               <div className="grid md:grid-cols-3 gap-5 mt-10">
 
                 <div className="border border-white/10 bg-black/20 rounded-2xl p-6">
-
                   <p className="text-lg font-semibold">
                     Secure Data
                   </p>
@@ -670,11 +657,9 @@ export default function Home() {
                     Sensitive records and personal
                     information remain protected.
                   </p>
-
                 </div>
 
                 <div className="border border-white/10 bg-black/20 rounded-2xl p-6">
-
                   <p className="text-lg font-semibold">
                     Potential Matches
                   </p>
@@ -683,11 +668,9 @@ export default function Home() {
                     AI supports identification instead of
                     automatically confirming identity.
                   </p>
-
                 </div>
 
                 <div className="border border-white/10 bg-black/20 rounded-2xl p-6">
-
                   <p className="text-lg font-semibold">
                     Human Verification
                   </p>
@@ -696,17 +679,12 @@ export default function Home() {
                     Important decisions remain under
                     controlled human review.
                   </p>
-
                 </div>
 
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       {/* ================= ABOUT ================= */}
@@ -715,7 +693,6 @@ export default function Home() {
         id="about"
         className="border-t border-white/10 bg-[#071522]"
       >
-
         <div className="max-w-5xl mx-auto px-6 py-20 text-center">
 
           <p className="text-cyan-400 text-xs tracking-[0.25em] font-semibold">
@@ -736,17 +713,14 @@ export default function Home() {
           </p>
 
         </div>
-
       </section>
 
       {/* ================= FOOTER ================= */}
 
       <footer className="border-t border-white/10 bg-[#040d17]">
-
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-8 flex flex-col md:flex-row gap-5 justify-between items-center">
 
           <div>
-
             <p className="text-lg font-bold">
               FindBack{" "}
               <span className="text-cyan-400">
@@ -757,7 +731,6 @@ export default function Home() {
             <p className="text-[10px] text-slate-500 tracking-widest mt-1">
               IDENTIFY • VERIFY • REUNITE
             </p>
-
           </div>
 
           <p className="text-xs text-slate-500 text-center">
@@ -766,7 +739,6 @@ export default function Home() {
           </p>
 
         </div>
-
       </footer>
 
     </main>
