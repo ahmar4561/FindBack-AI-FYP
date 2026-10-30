@@ -1,0 +1,41 @@
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
+venv/
+.venv/
+**/venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Next.js / Node
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+dist/
+
+# Private Dataset
+dataset_private/
+**/dataset_private/
+*.npy
+
+# Generated Files
+generated_documents/
+uploads/
+
+# IDE / OS / Logs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+ai/test_images/
