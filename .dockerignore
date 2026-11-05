@@ -1,0 +1,11 @@
+.git
+**/.env
+**/.env.*
+**/node_modules
+**/.next
+**/__pycache__
+**/.venv
+**/venv
+dataset_private
+**/test_images
+frontend

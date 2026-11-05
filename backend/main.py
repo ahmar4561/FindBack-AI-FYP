@@ -101,13 +101,13 @@ app.include_router(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-
-        # Add production frontend domain here
-        # when the system is deployed.
-        # Example:
-        # "https://your-domain.com",
+        origin.strip().rstrip("/")
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:3000,http://127.0.0.1:3000,"
+            "https://findback-ai-system.inteliodev.com",
+        ).split(",")
+        if origin.strip()
     ],
     allow_credentials=True,
     allow_methods=["*"],
