@@ -1,0 +1,21 @@
+[project]
+name = "findback-ai-api"
+version = "1.4.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi", "uvicorn", "python-dotenv", "supabase", "python-multipart",
+  "pydantic", "numpy<2", "facenet-pytorch==2.6.0", "torch==2.2.2",
+  "torchvision==0.17.2", "Pillow>=10.2,<10.3", "requests"
+]
+
+[tool.vercel]
+entrypoint = "index:app"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

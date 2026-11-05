@@ -39,3 +39,6 @@ uploads/
 Thumbs.db
 *.log
 ai/test_images/
+.vercel/
+.vercel
+.env*

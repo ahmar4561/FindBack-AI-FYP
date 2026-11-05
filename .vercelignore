@@ -1,0 +1,10 @@
+frontend
+.git
+**/.env
+**/.env.*
+**/__pycache__
+**/test_*.py
+**/.venv
+**/venv
+**/test_images
+dataset_private
