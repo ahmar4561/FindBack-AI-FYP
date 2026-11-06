@@ -16,6 +16,23 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     let active = true;
+    let recoveryDetected = false;
+    let recoveryError = "";
+
+    // Subscribe before checking the URL so that we can
+    // capture a Supabase PASSWORD_RECOVERY event.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (!active) return;
+
+      if (event === "PASSWORD_RECOVERY") {
+        recoveryDetected = true;
+        setAuthorized(true);
+        setErrorMessage("");
+        setChecking(false);
+      }
+    });
 
     async function initializeRecovery() {
       try {
@@ -32,15 +49,18 @@ export default function ResetPasswordPage() {
           query.get("error_description");
 
         if (linkError) {
-          throw new Error(linkError);
+          throw new Error(linkError.replace(/\+/g, " "));
         }
 
-        // Supabase recovery email commonly returns
-        // access_token and refresh_token in URL hash.
         const accessToken = hash.get("access_token");
         const refreshToken = hash.get("refresh_token");
-        const recoveryType = hash.get("type");
+        const code = query.get("code");
+        const tokenHash = query.get("token_hash");
 
+        const recoveryType =
+          hash.get("type") || query.get("type");
+
+        // Supabase implicit recovery flow.
         if (
           accessToken &&
           refreshToken &&
@@ -53,42 +73,86 @@ export default function ResetPasswordPage() {
 
           if (error) throw error;
 
-          // Remove sensitive tokens from browser URL.
-          window.history.replaceState(
-            {},
-            "",
-            window.location.pathname
-          );
-
-          if (active) setAuthorized(true);
-          return;
+          recoveryDetected = true;
         }
 
-        // Some Supabase configurations use PKCE
-        // authorization codes instead of hash tokens.
-        const code = query.get("code");
-
-        if (code) {
+        // Supabase PKCE recovery flow.
+        else if (code) {
           const { error } =
             await supabase.auth.exchangeCodeForSession(code);
 
+          if (error) {
+            // Supabase may have already consumed the code
+            // through automatic session detection.
+            if (!recoveryDetected) throw error;
+          } else {
+            recoveryDetected = true;
+          }
+        }
+
+        // Supabase token-hash recovery flow.
+        else if (
+          tokenHash &&
+          recoveryType === "recovery"
+        ) {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "recovery",
+          });
+
           if (error) throw error;
 
+          recoveryDetected = true;
+        }
+
+        // Allow the auth client to finish processing
+        // an incoming recovery event.
+        if (!recoveryDetected) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 600);
+          });
+        }
+
+        if (!active) return;
+
+        if (recoveryDetected) {
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+
+          if (sessionError) throw sessionError;
+
+          if (!session) {
+            throw new Error(
+              "Recovery session could not be established. Please request a new link."
+            );
+          }
+
+          if (!active) return;
+
+          setAuthorized(true);
+          setErrorMessage("");
+
+          // Clear sensitive tokens only after the
+          // recovery session has been established.
           window.history.replaceState(
             {},
             "",
             window.location.pathname
           );
+        } else {
+          recoveryError =
+            "Open this page using a new password reset link from your email.";
 
-          if (active) setAuthorized(true);
-          return;
+          setAuthorized(false);
+          setErrorMessage(recoveryError);
         }
-
-        throw new Error(
-          "Open this page using a new password reset link from your email."
-        );
       } catch (error) {
-        if (active) {
+        if (!active) return;
+
+        if (!recoveryDetected) {
+          setAuthorized(false);
           setErrorMessage(
             error instanceof Error
               ? error.message
@@ -100,10 +164,11 @@ export default function ResetPasswordPage() {
       }
     }
 
-    initializeRecovery();
+    void initializeRecovery();
 
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -133,6 +198,17 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error(
+          "Your recovery session has expired. Request a new reset link."
+        );
+      }
+
       const { error } = await supabase.auth.updateUser({
         password,
       });
@@ -140,6 +216,7 @@ export default function ResetPasswordPage() {
       if (error) throw error;
 
       setSuccess(true);
+      setAuthorized(false);
       setPassword("");
       setConfirmPassword("");
 
